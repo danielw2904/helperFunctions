@@ -4,7 +4,7 @@ tofactor <- function(factorVars, df){
   df[factorVars] <<- lapply(df[factorVars], factor)
 }
 
-addtime <- function(birth, surgery, OSdate, DFSdate, lastSeen, df, dateForm= 'ymd'){
+addtime <- function(birth, surgery, DFSdate, lastSeen, df, dateForm= 'ymd'){
   eval(parse(text = paste0('dateFun <- lubridate::', dateForm)))
   suppressMessages(attach(df))
   age <- (dateFun(get(lastSeen)) - dateFun(get(birth)))/365.25
@@ -57,15 +57,15 @@ vcoxu <- function(variables,  exit, df, duration = 'OS', rounding = 4, diagnosti
   if(diagnostics){
     print(results)
   }
-  coefs <- round(sapply(results, function(x){
-    x$coefficients[, 2]}), digits = rounding)
-  lower <- round(sapply(results, function(x){
-    x$conf.int[, 3]}), digits = rounding)
-  upper <- round(sapply(results, function(x){
-    x$conf.int[, 4]}), digits = rounding)
+  coefs <- round(unlist(sapply(results, function(x){
+    x$coefficients[, 2]})), digits = rounding)
+  lower <- round(unlist(sapply(results, function(x){
+    x$conf.int[, 3]})), digits = rounding)
+  upper <- round(unlist(sapply(results, function(x){
+    x$conf.int[, 4]})), digits = rounding)
   ci <- paste(lower, '-', upper)
-  pvals <- round(sapply(results, function(x){
-    x$coefficients[, 5]}), digits = rounding)
+  pvals <- round(unlist(sapply(results, function(x){
+    x$coefficients[, 5]})), digits = rounding)
   pvals <- ifelse(pvals<0.05, paste0(pvals, '*'), pvals)
   output <- data.frame("p-value univariate" = pvals, "RR" = coefs, "CI 95 perc" = ci, stringsAsFactors = F)
   return(output)
@@ -120,5 +120,5 @@ coxexport <- function(vcoxout, names, univariate = T, overall = T){
   print(vcoxout)
   fileName <- ifelse(univariate, "table2uni.csv", "table2multi.csv")
   write.csv(vcoxout, file = fileName)
-  cat("File written to", paste0(getwd(), fileName))
+  cat("File written to", paste0(getwd(),"/", fileName))
 }
