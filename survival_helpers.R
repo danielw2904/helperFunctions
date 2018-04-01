@@ -43,7 +43,7 @@ addhl <- function(variables, cutpoints, df){
   return(output)
 }
 
-vcoxu <- function(variables,  exit, df, duration = 'OS', rounding = 4){
+vcoxu <- function(variables,  exit, df, duration = 'OS', rounding = 4, diagnostics = TRUE){
   # Vectorized univariate cox regressions
   # Pass vector of variable names, duration variable, status variable, dataframe and rounding digits
   require('survival')
@@ -54,6 +54,9 @@ vcoxu <- function(variables,  exit, df, duration = 'OS', rounding = 4){
     coxph( x, data = df )})
   results <- lapply(models,function(x){
     summary(x)})
+  if(diagnostics){
+    print(results)
+  }
   coefs <- round(sapply(results, function(x){
     x$coefficients[, 2]}), digits = rounding)
   lower <- round(sapply(results, function(x){
@@ -68,7 +71,7 @@ vcoxu <- function(variables,  exit, df, duration = 'OS', rounding = 4){
   return(output)
 }
 
-vcoxm <- function(variables, controls,  exit, df, duration = OS, rounding = 4){
+vcoxm <- function(variables, controls,  exit, df, duration = OS, rounding = 4, diagnostics = TRUE){
   # same as vcoxu, variables is vector of variables of interest
   # controls are included in every model
   controls <- paste(controls, collapse = " + ")
@@ -79,6 +82,9 @@ vcoxm <- function(variables, controls,  exit, df, duration = OS, rounding = 4){
   models <- lapply(formulae, function(x){
     coxph(x, data = df)})
   results <- lapply(models,function(x){summary(x)})
+  if(diagnostics){
+    print(results)
+  }
   coefs <- round(sapply(results, function(x){
     x$coefficients[, 2]}), digits = rounding)
   lower <- as.data.frame(round(sapply(results, function(x){
@@ -116,13 +122,3 @@ coxexport <- function(vcoxout, names, univariate = T, overall = T){
   write.csv(vcoxout, file = fileName)
   cat("File written to", paste0(getwd(), fileName))
 }
-
-
-
-
-df2 <- addtime( birth = 'Geburtsdatum', 'OP_Datum', 'Sterbedatum', 'Rezidiv_datum', lastSeen = 'lastDate', df)
-
-res <- vcoxu(c("SII_hl", "NLR_hl"), exit = "Status", df = df2)
-
-coxexport(res)
-summary(coxph(Surv(time = DFS, event = Status)~SII_hl , data = df2))
