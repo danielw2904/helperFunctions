@@ -122,3 +122,48 @@ coxexport <- function(vcoxout, names, univariate = T, overall = T){
   write.csv(vcoxout, file = fileName)
   cat("File written to", paste0(getwd(),"/", fileName))
 }
+
+agesum <- function(age){
+  sumage <- c("Mean" = mean(age), "Median" = median(age), "SD" = sd(age), "Range" = range(age))
+  return(sumage)
+}
+
+nContByInt <- function(intvars, factvars, df){
+  factvars <- factvars[!(factvars %in% intvars)]
+  varGrid <- expand.grid(intvars, factvars)
+  levels2 <- Vectorize(levels)
+  rowStore <- length(unlist(levels2(subset(df, select = factvars))))
+  tabStore <- matrix(NA, ncol = 2 * length(intvars), nrow = rowStore)
+    for(i in seq_along(intvars)){
+      intvar <- intvars[i]
+      tabCur <-  lapply(factvars, function(x) x = by(df[[x]], df[[intvar]], table))
+      names(tabCur) <- factvars
+      tabCur <- unlist(tabCur, recursive = FALSE)
+      seqH <- seq(1, (length(tabCur)-1), by = 2)
+      seqL <- seqH + 1
+      hCur <- tabCur[seqH]
+      lCur <- tabCur[seqL]
+      tabStore[,(2 * i - 1)] <- unlist(hCur)
+      tabStore[,(2 * i)] <- unlist(lCur)
+    }
+  rownames(tabStore) <- names(unlist(hCur))
+  return(tabStore)
+}
+
+tab1 <- function(age, variables, factvars, df, overall = "OS", dfree = "DFS"){
+  # All 
+  Total <- nrow(df)
+  Age <- agesum(as.numeric(df[[age]]))
+  ageMean <- Age['Mean']
+  factvars <- factvars[!(factvars %in% variables)]
+  nObsControls <- sapply(factvars, function(x) x = table(df[[x]]))
+  nObsControls <- unlist(nObsControls)
+  col1 <- rbind(Total, ageMean, nObsControls)
+  ageSd <- Age['SD']
+  shares <- nObsControls / Total
+  col2 <- rbind(NA, ageSd, shares)
+  cols3tox <- nContByInt(intvars = variables, factvars = factvars, df = df)
+  chiTests <- sapply(variables, function(y) lapply(factvars, function(x) chisq.test(df[[x]], df[[y]])))
+  return(list(ageMean, unlist(nObsControls)))
+}
+
